@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ladder Blackjack — Booth Test Table</title>
+<style>
+  :root{
+    --felt:#0e463d; --felt-deep:#0a352e; --felt-edge:#07271f;
+    --brass:#c8a24b; --brass-bright:#e6c877; --brass-dim:#8f7433;
+    --card:#f5efe0; --card-edge:#d8cdb2; --ink:#20211d;
+    --win:#57c39a; --loss:#c76b72; --push:#c9b579; --jackpot:#ffd766;
+    --red:#c0392b; --text:#eee7d4; --text-dim:#a7b4a5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    background:radial-gradient(ellipse at 50% 20%,var(--felt) 0%,var(--felt-deep) 55%,var(--felt-edge) 100%);
+    color:var(--text); min-height:100vh; overflow-x:hidden;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  .wrap{width:100%; max-width:1080px; padding:16px; flex:1;
+        display:grid; grid-template-columns:1fr 260px; gap:18px}
+  header{grid-column:1/-1; display:flex; justify-content:space-between; align-items:flex-end;
+         border-bottom:1px solid var(--brass-dim); padding-bottom:10px}
+  h1{font-size:26px; font-weight:800; letter-spacing:.14em; text-transform:uppercase;
+     color:var(--brass-bright); text-shadow:0 1px 0 #000}
+  h1 span{display:block; font-size:11px; letter-spacing:.34em; color:var(--text-dim); font-weight:600}
+  .entry-tag{font-size:12px; letter-spacing:.1em; color:var(--text-dim); text-align:right}
+  .entry-tag b{color:var(--brass-bright); font-size:15px}
+
+  /* Table area */
+  .table{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(0,0,0,.14));
+         border:1px solid var(--brass-dim); border-radius:16px; padding:18px 18px 14px;
+         box-shadow:inset 0 2px 30px rgba(0,0,0,.35); min-height:440px; position:relative;
+         display:flex; flex-direction:column}
+  .zone-label{font-size:10px; letter-spacing:.28em; text-transform:uppercase; color:var(--text-dim); margin-bottom:6px}
+  .hand-row{min-height:112px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  .totals{font-size:13px; color:var(--text-dim); margin:2px 0 12px}
+  .totals b{color:var(--text); font-variant-numeric:tabular-nums}
+  .divider{height:1px; background:linear-gradient(90deg,transparent,var(--brass-dim),transparent); margin:6px 0 12px}
+
+  .split-hands{display:flex; gap:22px; flex-wrap:wrap}
+  .split-hand{padding:8px; border-radius:10px; border:1px dashed transparent}
+  .split-hand.active{border-color:var(--brass); background:rgba(200,162,75,.07)}
+  .split-hand .tag{font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--brass); margin-bottom:4px; min-height:12px}
+
+  /* Cards */
+  .card{width:66px; height:94px; background:var(--card); border-radius:8px; position:relative;
+        box-shadow:0 3px 8px rgba(0,0,0,.4), inset 0 0 0 1px var(--card-edge);
+        color:var(--ink); flex:0 0 auto; animation:deal .28s ease}
+  .card.red{color:var(--red)}
+  .card .rank{position:absolute; top:5px; left:7px; font-size:17px; font-weight:800; line-height:1}
+  .card .suit{position:absolute; bottom:5px; right:7px; font-size:19px}
+  .card .pip{position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:30px; opacity:.9}
+  .card.back{background:repeating-linear-gradient(45deg,#5a3a86,#5a3a86 6px,#4a2f70 6px,#4a2f70 12px);
+             box-shadow:0 3px 8px rgba(0,0,0,.4), inset 0 0 0 2px var(--brass-dim), inset 0 0 0 3px #2c1c45}
+  @keyframes deal{from{opacity:0; transform:translateY(-16px) rotate(-4deg)} to{opacity:1}}
+
+  /* Banner */
+  .banner{margin-top:auto; min-height:52px; display:flex; align-items:center; justify-content:center;
+          border-radius:10px; font-size:16px; font-weight:700; letter-spacing:.02em; padding:10px 14px; text-align:center;
+          background:rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.06); transition:background .2s}
+  .banner.win{background:rgba(87,195,154,.16); border-color:var(--win); color:#bff0da}
+  .banner.loss{background:rgba(199,107,114,.15); border-color:var(--loss); color:#f3c8cb}
+  .banner.push{background:rgba(201,181,121,.14); border-color:var(--push); color:#efe3ba}
+  .banner.jackpot{background:rgba(255,215,102,.18); border-color:var(--jackpot); color:#fff0bf;
+                  animation:pulse 1s ease infinite alternate}
+  @keyframes pulse{to{box-shadow:0 0 18px rgba(255,215,102,.5)}}
+
+  /* Controls */
+  .controls{grid-column:1/-1; display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:2px}
+  button{font-family:inherit; font-size:14px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+         padding:12px 20px; border-radius:9px; border:1px solid var(--brass-dim); cursor:pointer;
+         background:linear-gradient(180deg,#1b5347,#123f36); color:var(--text); transition:transform .08s, filter .15s}
+  button:hover:not(:disabled){filter:brightness(1.18); transform:translateY(-1px)}
+  button:active:not(:disabled){transform:translateY(0)}
+  button:disabled{opacity:.32; cursor:not-allowed}
+  button.primary{background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#3a2e0e; border-color:var(--brass-bright)}
+  button.danger{background:linear-gradient(180deg,#7a2f34,#5e2429); border-color:#8f3a40}
+  button:focus-visible{outline:2px solid var(--brass-bright); outline-offset:2px}
+
+  /* Ladder rail */
+  .rail{background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.28)); border:1px solid var(--brass-dim);
+        border-radius:14px; padding:14px 12px; display:flex; flex-direction:column; gap:0}
+  .rail h2{font-size:11px; letter-spacing:.24em; text-transform:uppercase; color:var(--brass); margin-bottom:8px}
+  .rung{display:flex; align-items:center; gap:9px; padding:7px 6px; border-radius:8px; position:relative}
+  .rung.jackpot-rung{background:rgba(255,215,102,.06)}
+  .rung .wins{width:26px; height:26px; flex:0 0 auto; border-radius:6px; display:grid; place-items:center;
+              font-weight:800; font-size:13px; background:rgba(255,255,255,.06); color:var(--text-dim);
+              border:1px solid rgba(255,255,255,.08)}
+  .rung .info{font-size:11.5px; line-height:1.25}
+  .rung .info b{color:var(--text); display:block; font-weight:700}
+  .rung .info span{color:var(--text-dim)}
+  .rung.reached .wins{background:var(--brass-dim); color:#fff}
+  .rung.current{background:rgba(200,162,75,.16); box-shadow:inset 0 0 0 1px var(--brass)}
+  .rung.current .wins{background:var(--brass-bright); color:#3a2e0e}
+  .rung.jackpot-rung .wins{background:linear-gradient(180deg,var(--jackpot),#e0b53c); color:#3a2e0e}
+
+  .status{grid-column:1/-1; display:flex; gap:14px; flex-wrap:wrap; justify-content:center;
+          font-size:12px; color:var(--text-dim); padding-top:4px}
+  .status .chip{background:rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.07); border-radius:20px; padding:6px 14px}
+  .status .chip b{color:var(--brass-bright); font-variant-numeric:tabular-nums}
+
+  /* House stats */
+  .house{grid-column:1/-1; margin-top:6px; border-top:1px solid var(--brass-dim); padding-top:12px}
+  .house summary{cursor:pointer; font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--brass); user-select:none}
+  .house-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-top:12px}
+  .stat{background:rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.07); border-radius:10px; padding:10px 12px}
+  .stat .k{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--text-dim)}
+  .stat .v{font-size:20px; font-weight:800; color:var(--brass-bright); font-variant-numeric:tabular-nums; margin-top:3px}
+  .stat .v small{font-size:12px; color:var(--text-dim); font-weight:600}
+  .margin-good{color:var(--win)!important} .margin-high{color:var(--jackpot)!important} .margin-low{color:var(--loss)!important}
+  .tier-counts{font-size:11px; color:var(--text-dim); margin-top:10px; line-height:1.7}
+  .tier-counts b{color:var(--text)}
+  .reset-stats{margin-top:10px; font-size:11px; padding:6px 12px}
+
+  footer{grid-column:1/-1; font-size:10.5px; color:var(--text-dim); text-align:center; padding:8px 0 4px; line-height:1.6}
+  @media(max-width:760px){
+    .wrap{grid-template-columns:1fr}
+    .rail{grid-row:auto}
+  }
+  @media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Ladder Blackjack<span>Booth prize test table</span></h1>
+    <div class="entry-tag">Entry <b>$25</b> · Double <b>$5</b> · Splits free</div>
+  </header>
+
+  <div class="table">
+    <div class="zone-label">Dealer</div>
+    <div class="hand-row" id="dealer-cards"></div>
+    <div class="totals" id="dealer-total">&nbsp;</div>
+    <div class="divider"></div>
+    <div class="zone-label">You</div>
+    <div class="hand-row" id="player-cards"></div>
+    <div class="totals" id="player-total">&nbsp;</div>
+    <div class="banner" id="banner">Press <strong>&nbsp;New Player&nbsp;</strong> to buy in for $25 and start climbing.</div>
+  </div>
+
+  <aside class="rail" id="rail">
+    <h2>Prize Ladder</h2>
+    <!-- rungs injected -->
+  </aside>
+
+  <div class="controls" id="controls"></div>
+
+  <div class="status">
+    <div class="chip">Win streak <b id="s-wins">0</b></div>
+    <div class="chip">Fees paid <b id="s-fees">$0</b></div>
+    <div class="chip">Banked if you lose now <b id="s-floor">—</b></div>
+    <div class="chip">Shoe <b id="s-shoe">312</b> cards</div>
+  </div>
+
+  <details class="house">
+    <summary>House test panel — live margin &amp; outcome tracking</summary>
+    <div class="house-grid">
+      <div class="stat"><div class="k">Players</div><div class="v" id="h-players">0</div></div>
+      <div class="stat"><div class="k">Gross revenue</div><div class="v" id="h-rev">$0</div></div>
+      <div class="stat"><div class="k">Prize cost paid</div><div class="v" id="h-cost">$0</div></div>
+      <div class="stat"><div class="k">Profit</div><div class="v" id="h-profit">$0</div></div>
+      <div class="stat"><div class="k">House margin</div><div class="v" id="h-margin">—</div></div>
+      <div class="stat"><div class="k">Hand win rate</div><div class="v" id="h-winrate">—</div></div>
+    </div>
+    <div class="tier-counts" id="h-tiers"></div>
+    <button class="reset-stats" id="btn-reset">Reset test stats</button>
+  </details>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+"use strict";
+// ---------- Locked config ----------
+const ENTRY = 25, DOUBLE_FEE = 5;
+const MILESTONES = [2,3,5,7,10,14];
+const PRIZES = {
+  2:  {name:"Ascended Heroes pack",     cost:16,   value:23},
+  3:  {name:"Journey + 2 Base packs",   cost:21,   value:30},
+  5:  {name:"Ascended + Base pack",     cost:22.5, value:33},
+  7:  {name:"Prismatic tin",            cost:20,   value:50},
+  10: {name:"Elite Trainer Box",        cost:94,   value:100},
+  14: {name:"PC ETB — JACKPOT",         cost:95,   value:170},
+};
+const BASE   = {name:"2 Base packs",             cost:13, value:20};
+const CONSOL = {name:"1 Ascended (double loss)", cost:16, value:23};
+
+// ---------- Shoe ----------
+const SUITS = [["\u2660","black"],["\u2665","red"],["\u2666","red"],["\u2663","black"]];
+const RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+let shoe = [], cut = 0;
+function buildShoe(){
+  shoe = [];
+  for(let d=0; d<6; d++) for(const [s,col] of SUITS) for(const r of RANKS) shoe.push({rank:r,suit:s,col});
+  for(let i=shoe.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shoe[i],shoe[j]]=[shoe[j],shoe[i]];}
+  cut = 78; // reshuffle when ~25% remains ("shuffled through the day")
+}
+function draw(){
+  if(shoe.length<=cut){ buildShoe(); shuffledFlash=true; }
+  return shoe.pop();
+}
+let shuffledFlash=false;
+buildShoe();
+
+// ---------- Hand math ----------
+function value(cards){
+  let t=0, aces=0;
+  for(const c of cards){ if(c.rank==="A"){aces++;t+=11;} else if(["K","Q","J"].includes(c.rank)) t+=10; else t+=Number(c.rank); }
+  while(t>21 && aces>0){ t-=10; aces--; }
+  return {total:t, soft:aces>0};
+}
+const isBJ = cards => cards.length===2 && value(cards).total===21;
+function cmp(p,d){ const pv=value(p).total, dv=value(d).total;
+  if(pv>21) return "loss"; if(dv>21) return "win"; if(pv>dv) return "win"; if(pv<dv) return "loss"; return "push"; }
+
+// ---------- State ----------
+let winCount=0, feesThisGame=0, gameActive=false;
+let dealer=[], hands=[], activeHand=0, doubledFlags=[], isSplit=false, dealerHidden=true;
+let state="IDLE"; // IDLE, PLAYER, RESOLVED, MILESTONE, OVER
+
+// House stats
+const stats = {players:0, revenue:0, cost:0, handWins:0, handDecided:0, tiers:{}};
+
+// ---------- Rendering ----------
+const $ = id => document.getElementById(id);
+function cardEl(c, faceDown=false){
+  const d=document.createElement("div");
+  d.className="card"+(faceDown?" back":(c.col==="red"?" red":""));
+  if(!faceDown) d.innerHTML=`<div class="rank">${c.rank}</div><div class="pip">${c.suit}</div><div class="suit">${c.suit}</div>`;
+  return d;
+}
+function renderDealer(){
+  const box=$("dealer-cards"); box.innerHTML="";
+  dealer.forEach((c,i)=> box.appendChild(cardEl(c, dealerHidden && i===1)));
+  $("dealer-total").innerHTML = dealer.length? (dealerHidden? `<b>?</b>` : `Total <b>${value(dealer).total}</b>${isBJ(dealer)?" · Blackjack":""}`) : "&nbsp;";
+}
+function renderPlayer(){
+  const box=$("player-cards"); box.innerHTML="";
+  if(!isSplit){
+    hands[0]?.forEach(c=> box.appendChild(cardEl(c)));
+    $("player-total").innerHTML = hands[0]?.length? `Total <b>${value(hands[0]).total}</b>${value(hands[0]).soft?" · soft":""}${isBJ(hands[0])?" · Blackjack!":""}` : "&nbsp;";
+  } else {
+    const wrap=document.createElement("div"); wrap.className="split-hands";
+    hands.forEach((h,i)=>{
+      const hd=document.createElement("div"); hd.className="split-hand"+(i===activeHand&&state==="PLAYER"?" active":"");
+      const tag=document.createElement("div"); tag.className="tag"; tag.textContent = `Hand ${i+1} · ${value(h).total}${i===activeHand&&state==="PLAYER"?" ◄":""}`;
+      hd.appendChild(tag);
+      const row=document.createElement("div"); row.style.display="flex"; row.style.gap="6px";
+      h.forEach(c=> row.appendChild(cardEl(c))); hd.appendChild(row); wrap.appendChild(hd);
+    });
+    box.appendChild(wrap); $("player-total").innerHTML="&nbsp;";
+  }
+}
+function renderRail(){
+  const rail=$("rail"); rail.innerHTML='<h2>Prize Ladder</h2>';
+  const rows=[["L","Lose 1st hand",BASE.name,`$${BASE.value} value`,false]];
+  MILESTONES.forEach(m=>{
+    const p=PRIZES[m];
+    rows.push([m, `${m} wins`, p.name, `$${p.value} value`, m===14]);
+  });
+  rows.forEach(([w,label,name,val,jack])=>{
+    const div=document.createElement("div");
+    let cls="rung"+(jack?" jackpot-rung":"");
+    if(typeof w==="number"){
+      if(winCount>=w && gameActive) cls+=" reached";
+      if(winCount===w && gameActive) cls+=" current";
+    }
+    div.className=cls;
+    div.innerHTML=`<div class="wins">${w}</div><div class="info"><b>${name}</b><span>${label} · ${val}</span></div>`;
+    rail.appendChild(div);
+  });
+}
+function currentFloor(){ // what you get if you lose right now
+  return "—";
+}
+function renderStatus(){
+  $("s-wins").textContent = winCount;
+  $("s-fees").textContent = "$"+feesThisGame;
+  $("s-shoe").textContent = shoe.length;
+  let floor="—";
+  if(gameActive){
+    // if you lose the next hand: consolation only if you would double; base otherwise. Show the guaranteed base/consolation baseline.
+    floor = `${BASE.name} ($${BASE.value})`;
+  }
+  $("s-floor").textContent = gameActive? floor : "—";
+}
+function renderControls(){
+  const c=$("controls"); c.innerHTML="";
+  const mk=(label,cls,fn,dis=false)=>{const b=document.createElement("button"); b.textContent=label; if(cls)b.className=cls; b.disabled=dis; b.onclick=fn; c.appendChild(b); return b;};
+  if(state==="IDLE" || state==="OVER"){
+    mk("New Player · $25","primary",newGame);
+  } else if(state==="PLAYER"){
+    const h=hands[activeHand];
+    const firstDecision = h.length===2 && !isSplit;
+    mk("Hit",null,()=>hit());
+    mk("Stand",null,()=>stand());
+    if(firstDecision) mk("Double $5","primary",()=>doubleDown());
+    if(firstDecision && h[0].rank===h[1].rank) mk("Split (free)",null,()=>split());
+  } else if(state==="MILESTONE"){
+    const p=PRIZES[winCount];
+    mk(`Cash out: ${p.name}`,"primary",()=>cashOut());
+    mk("Keep climbing","danger",()=>nextHand());
+  } else if(state==="RESOLVED"){
+    mk("Deal next hand","primary",()=>nextHand());
+  }
+}
+function banner(msg,type){ const b=$("banner"); b.className="banner"+(type?" "+type:""); b.innerHTML=msg; }
+function renderAll(){ renderDealer(); renderPlayer(); renderRail(); renderStatus(); renderControls(); renderHouse(); }
+
+// ---------- Game flow ----------
+function newGame(){
+  stats.players++; stats.revenue+=ENTRY;
+  winCount=0; feesThisGame=0; gameActive=true; isSplit=false; activeHand=0; doubledFlags=[false,false]; dealerHidden=true;
+  if(shuffledFlash){ shuffledFlash=false; }
+  dealHand(true);
+}
+function dealHand(fresh){
+  dealerHidden=true; isSplit=false; activeHand=0; doubledFlags=[false];
+  hands=[[draw(),draw()]]; dealer=[draw(),draw()];
+  state="PLAYER";
+  const shoeNote = shuffledFlash? " · (shoe reshuffled)":""; shuffledFlash=false;
+  // Naturals
+  const pBJ=isBJ(hands[0]), dBJ=isBJ(dealer);
+  if(pBJ || dBJ){
+    dealerHidden=false;
+    if(pBJ && dBJ){ renderAll(); banner("Both blackjack — push. Deal again, streak unchanged."+shoeNote,"push"); state="RESOLVED"; renderControls(); return; }
+    if(pBJ){ renderAll(); resolveWin(2, "Blackjack! +2 wins."+shoeNote, true); return; }
+    // dealer BJ
+    renderAll(); endGame("loss", false, "Dealer blackjack — you lose."+shoeNote); return;
+  }
+  banner("Your move."+shoeNote,"");
+  renderAll();
+}
+function hit(){
+  const h=hands[activeHand]; h.push(draw());
+  if(value(h).total>21){ // bust this hand
+    if(isSplit){ advanceSplit(); }
+    else { renderAll(); endGame("loss", doubledFlags[0], "Bust! You went over 21."); }
+    return;
+  }
+  renderAll();
+}
+function stand(){
+  if(isSplit){ advanceSplit(); return; }
+  dealerPlayThenResolve();
+}
+function doubleDown(){
+  feesThisGame+=DOUBLE_FEE; stats.revenue+=DOUBLE_FEE; doubledFlags[0]=true;
+  const h=hands[0]; h.push(draw());
+  renderAll();
+  if(value(h).total>21){ endGame("loss", true, "Doubled and busted — consolation prize."); return; }
+  dealerPlayThenResolve();
+}
+function split(){
+  isSplit=true;
+  const [a,b]=hands[0];
+  hands=[[a,draw()],[b,draw()]]; doubledFlags=[false,false]; activeHand=0; state="PLAYER";
+  banner("Split! Play hand 1. Beat the dealer on <b>either</b> hand to advance.","");
+  renderAll();
+}
+function advanceSplit(){
+  if(activeHand < hands.length-1){ activeHand++; renderAll(); banner(`Play hand ${activeHand+1}.`,""); }
+  else { dealerPlayThenResolve(); }
+}
+function dealerPlayThenResolve(){
+  dealerHidden=false;
+  // dealer draws to 17 (stands on all 17, incl soft)
+  while(value(dealer).total<17) dealer.push(draw());
+  renderAll();
+  if(!isSplit){
+    const r=cmp(hands[0],dealer);
+    if(r==="win") resolveWin(doubledFlags[0]?2:1, doubledFlags[0]?"You win the double — +2 wins!":"You beat the dealer — +1 win.", false);
+    else if(r==="push"){ if(doubledFlags[0]){feesThisGame-=DOUBLE_FEE; stats.revenue-=DOUBLE_FEE;} banner("Push — bet returned, streak unchanged. Deal again.","push"); state="RESOLVED"; renderControls(); renderStatus(); }
+    else endGame("loss", doubledFlags[0], doubledFlags[0]?"Doubled hand lost — consolation prize.":"Dealer wins — you lose.");
+  } else {
+    const results=hands.map(h=>cmp(h,dealer));
+    const anyWin=results.includes("win"), anyPush=results.includes("push");
+    if(anyWin) resolveWin(1, `Split result: ${results.join(" / ")} — a hand beat the dealer, +1 win.`, false);
+    else if(anyPush){ banner(`Split result: ${results.join(" / ")} — no win but a push. Streak unchanged, deal again.`,"push"); state="RESOLVED"; renderControls(); }
+    else endGame("loss", false, `Split result: ${results.join(" / ")} — both lost. You lose.`);
+  }
+}
+function resolveWin(adv, msg, viaBJ){
+  winCount += adv; if(winCount>14) winCount=14;
+  banner(msg + (winCount>=14? " → JACKPOT!":""), winCount>=14?"jackpot":"win");
+  if(winCount>=14){ endGame("jackpot", false, msg+" You maxed the ladder — PC ETB jackpot!"); return; }
+  if(MILESTONES.includes(winCount)){ state="MILESTONE"; }
+  else { state="RESOLVED"; }
+  renderAll();
+}
+function nextHand(){ dealHand(false); }
+function cashOut(){
+  const p=PRIZES[winCount];
+  recordEnd(p);
+  banner(`Cashed out at ${winCount} wins → <b>${p.name}</b> ($${p.value} value). Nicely played.`,"win");
+  gameActive=false; state="OVER"; renderAll();
+}
+function endGame(kind, doubled, msg){
+  let prize;
+  if(kind==="jackpot") prize=PRIZES[14];
+  else prize = doubled? CONSOL : BASE;
+  recordEnd(prize);
+  const type = kind==="jackpot"?"jackpot":(kind==="loss" && doubled ? "loss" : (kind==="loss"?"loss":"win"));
+  banner(`${msg} You receive <b>${prize.name}</b> ($${prize.value} value).`, kind==="jackpot"?"jackpot":"loss");
+  gameActive=false; state="OVER"; renderAll();
+}
+function recordEnd(prize){
+  stats.cost += prize.cost;
+  stats.tiers[prize.name] = (stats.tiers[prize.name]||0)+1;
+}
+
+// track per-hand win rate (decided hands only, excl pushes) — hook into resolve points
+const _origResolveWin = resolveWin;
+// (win rate tracked simply in dealerPlay/naturals via wrapper below)
+
+// ---------- House panel ----------
+function renderHouse(){
+  $("h-players").textContent = stats.players;
+  $("h-rev").innerHTML = "$"+stats.revenue.toFixed(0);
+  $("h-cost").innerHTML = "$"+stats.cost.toFixed(2);
+  const profit = stats.revenue - stats.cost;
+  $("h-profit").innerHTML = "$"+profit.toFixed(2);
+  const m = stats.revenue>0 ? profit/stats.revenue*100 : null;
+  const me=$("h-margin");
+  if(m===null){ me.textContent="—"; me.className="v"; }
+  else { me.innerHTML=m.toFixed(1)+"<small>%</small>";
+         me.className="v "+(m>45?"margin-high":(m>=38?"margin-good":"margin-low")); }
+  const wr = stats.handDecided>0 ? stats.handWins/stats.handDecided*100 : null;
+  $("h-winrate").innerHTML = wr===null? "—" : wr.toFixed(1)+"<small>%</small>";
+  const t=$("h-tiers");
+  const keys=Object.keys(stats.tiers);
+  t.innerHTML = keys.length? "Outcomes: "+keys.map(k=>`<b>${stats.tiers[k]}×</b> ${k}`).join(" &nbsp;·&nbsp; ") : "";
+}
+$("btn-reset").onclick=()=>{ stats.players=0;stats.revenue=0;stats.cost=0;stats.handWins=0;stats.handDecided=0;stats.tiers={}; renderHouse(); };
+
+// hand-win-rate tracking: wrap resolve outcomes
+function trackHand(result){ // 'win' | 'loss' (exclude push)
+  if(result==="push") return; stats.handDecided++; if(result==="win") stats.handWins++;
+}
+// patch resolve paths
+const _dealerPlay = dealerPlayThenResolve;
+dealerPlayThenResolve = function(){
+  dealerHidden=false;
+  while(value(dealer).total<17) dealer.push(draw());
+  renderAll();
+  if(!isSplit){
+    const r=cmp(hands[0],dealer); trackHand(r);
+    if(r==="win") resolveWin(doubledFlags[0]?2:1, doubledFlags[0]?"You win the double — +2 wins!":"You beat the dealer — +1 win.", false);
+    else if(r==="push"){ if(doubledFlags[0]){feesThisGame-=DOUBLE_FEE; stats.revenue-=DOUBLE_FEE;} banner("Push — bet returned, streak unchanged. Deal again.","push"); state="RESOLVED"; renderControls(); renderStatus(); }
+    else endGame("loss", doubledFlags[0], doubledFlags[0]?"Doubled hand lost — consolation prize.":"Dealer wins — you lose.");
+  } else {
+    const results=hands.map(h=>cmp(h,dealer));
+    const anyWin=results.includes("win"), anyPush=results.includes("push");
+    trackHand(anyWin?"win":(anyPush?"push":"loss"));
+    if(anyWin) resolveWin(1, `Split: ${results.join(" / ")} — a hand won, +1.`, false);
+    else if(anyPush){ banner(`Split: ${results.join(" / ")} — push. Streak unchanged, deal again.`,"push"); state="RESOLVED"; renderControls(); }
+    else endGame("loss", false, `Split: ${results.join(" / ")} — both lost.`);
+  }
+};
+// natural blackjack should also count as a decided win
+const _dealHand=dealHand;
+dealHand=function(fresh){
+  dealerHidden=true; isSplit=false; activeHand=0; doubledFlags=[false];
+  hands=[[draw(),draw()]]; dealer=[draw(),draw()];
+  state="PLAYER";
+  let shoeNote = shuffledFlash? " · (shoe reshuffled)":""; shuffledFlash=false;
+  const pBJ=isBJ(hands[0]), dBJ=isBJ(dealer);
+  if(pBJ||dBJ){
+    dealerHidden=false;
+    if(pBJ&&dBJ){ trackHand("push"); renderAll(); banner("Both blackjack — push. Deal again."+shoeNote,"push"); state="RESOLVED"; renderControls(); return; }
+    if(pBJ){ trackHand("win"); renderAll(); resolveWin(2,"Blackjack! +2 wins."+shoeNote,true); return; }
+    trackHand("loss"); renderAll(); endGame("loss",false,"Dealer blackjack — you lose."+shoeNote); return;
+  }
+  banner("Your move."+shoeNote,""); renderAll();
+};
+
+$("foot").innerHTML = "Locked model: Option A ladder (2/3/5/7/10/14 wins) · $25 entry · $5 double (win +2 / lose = 1 Ascended consolation) · free splits · 6-deck shoe reshuffled at cut. "+
+  "Modeled blended margin ≈ 49% at 60% greedy / 20% standard / 20% counter crowd. Play a stack of hands and watch the House panel converge.";
+
+renderAll();
+</script>
+</body>
+</html>
